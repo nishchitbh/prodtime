@@ -18,7 +18,7 @@ from anywhere in your terminal.
 
 # Requirements
 
-* Python 3.8 or higher
+* Python 3.12 or higher
 * `pip` installed and available in PATH
 
 Check:
