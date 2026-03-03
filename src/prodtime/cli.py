@@ -5,7 +5,6 @@ import time
 import argparse
 import datetime
 import csv
-import os
 
 DB_FILE = "timers.db"
 
@@ -46,52 +45,57 @@ def start_timer():
         print("Timer name cannot be empty.")
         return
 
-    print("\nCommands while running:")
-    print("p = pause/resume")
-    print("s = stop and save")
-    print("d = stop and delete\n")
+    print("\nTimer started. Press Ctrl+C to pause.\n")
 
-    start_time = time.perf_counter()
     elapsed = 0
-    running = True
+    start_time = time.perf_counter()
 
-    while True:
-        if running:
+    try:
+        while True:
             current = time.perf_counter()
             total = elapsed + (current - start_time)
-        else:
-            total = elapsed
 
-        print(f"\rElapsed: {total:.2f} sec", end="")
+            print(f"\rElapsed: {format_duration(total)}", end="")
+            time.sleep(1)
 
-        if os.name == "nt":
-            import msvcrt
+    except KeyboardInterrupt:
+        # Pause timer
+        elapsed += time.perf_counter() - start_time
+        print("\n\nPaused at:", format_duration(elapsed))
 
-            if msvcrt.kbhit():
-                key = msvcrt.getch().decode().lower()
+        while True:
+            print("\nOptions:")
+            print("1 → Resume")
+            print("2 → Stop and Save")
+            print("3 → Stop and Delete")
 
-                if key == "p":
-                    if running:
-                        elapsed += time.perf_counter() - start_time
-                        running = False
-                        print("\nPaused.")
-                    else:
-                        start_time = time.perf_counter()
-                        running = True
-                        print("\nResumed.")
+            choice = input("Select option (1/2/3): ").strip()
 
-                elif key == "s":
-                    if running:
-                        elapsed += time.perf_counter() - start_time
-                    save_timer(name, tags, elapsed)
-                    print("\nTimer saved.")
-                    return
+            if choice == "1":
+                print("\nResuming...\nPress Ctrl+C to pause again.\n")
+                start_time = time.perf_counter()
+                try:
+                    while True:
+                        current = time.perf_counter()
+                        total = elapsed + (current - start_time)
+                        print(f"\rElapsed: {format_duration(total)}", end="")
+                        time.sleep(1)
+                except KeyboardInterrupt:
+                    elapsed += time.perf_counter() - start_time
+                    print("\n\nPaused at:", format_duration(elapsed))
+                    continue
 
-                elif key == "d":
-                    print("\nTimer deleted.")
-                    return
+            elif choice == "2":
+                save_timer(name, tags, elapsed)
+                print("Timer saved.")
+                return
 
-        time.sleep(0.1)
+            elif choice == "3":
+                print("Timer deleted.")
+                return
+
+            else:
+                print("Invalid option.")
 
 
 # ======================
@@ -118,6 +122,14 @@ def save_timer(name, tags, duration):
     conn.close()
 
 
+def format_duration(seconds: float) -> str:
+    total_seconds = int(seconds)
+    hours = total_seconds // 3600
+    minutes = (total_seconds % 3600) // 60
+    secs = total_seconds % 60
+    return f"{hours:02}:{minutes:02}:{secs:02}"
+
+
 def list_timers():
     conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
@@ -130,7 +142,8 @@ def list_timers():
         return
 
     for row in rows:
-        print(f"ID: {row[0]} | {row[1]} | {row[2]} | {row[3]} sec | {row[4]}")
+        formatted = format_duration(row[3])
+        print(f"ID: {row[0]} | {row[1]} | {row[2]} | {formatted} | {row[4]}")
 
 
 def delete_timer(timer_id):
