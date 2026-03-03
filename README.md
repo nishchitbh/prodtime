@@ -1,5 +1,7 @@
-# prodtime
 
+# prodtime
+## Note: This project is vibecoded
+---
 `prodtime` is a cross-platform command-line productivity timer for developers.
 
 After installation, you can run:
